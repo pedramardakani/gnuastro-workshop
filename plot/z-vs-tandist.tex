@@ -1,0 +1,15 @@
+\documentclass{article}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.5}
+
+\begin{document}
+\begin{tikzpicture}
+  \begin{axis}[
+      title=redshift vs tangential distance,
+      xlabel={redshift $(z)$},
+      ylabel={tangential distance $(Mpc^2)$},
+    ]
+    \addplot [blue] table{z-vs-tandist.dat};
+  \end{axis}
+\end{tikzpicture}
+\end{document}

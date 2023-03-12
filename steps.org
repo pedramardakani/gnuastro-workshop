@@ -378,3 +378,109 @@ Each pixel covers a specific area of the sky.
    This prevents silly mistakes, and saves your time.
    Quick and accurate results.
    Please let us know if you find any *bugs* though!
+
+** 2.1.6 Cosmological coverage and visualizing tables
+
+*** How large is this area at different redshifts?
+
+#+BEGIN_SRC bash
+  ## Print general cosmological properties at redshift 2 (for example).
+  astcosmiccal -z2
+
+  ## When given a "Specific calculation" option, CosmicCalculator
+  ## will just print that particular calculation. To see all such
+  ## calculations, add a `--help' token to the previous command
+  ## (under the same title). Note that with `--help', no processing
+  ## is done, so you can always simply append it to remember
+  ## something without modifying the command you want to run.
+  astcosmiccal -z2 --help
+
+  ## Only print the "Tangential dist. covered by 1 arcsec at z (kpc)".
+  ## in units of kpc/arc-seconds.
+  astcosmiccal -z2 --arcsectandist
+
+  ## It is easier to use the short (single character) version of
+  ## this option when typing (but this is hard to read, so use
+  ## the long version in scripts or notes you plan to archive).
+  astcosmiccal -z2 -s
+
+  ## Short options can be merged (they are only a single character!)
+  astcosmiccal -sz2
+
+  ## Convert this distance to kpc^2/arcmin^2 and save in `k'.
+  k=$(astcosmiccal -sz2 | awk '{print ($1*60)^2}')
+
+  ## Calculate the area of the dataset in arcmin^2.
+  n=$(aststatistics flat-ir/xdf-f160w.fits --number)
+  r=$(astfits flat-ir/xdf-f160w.fits -h1 --keyvalue=CDELT1 -q)
+  a=$(echo $n $r | awk '{print $1 * ($2*60)^2 }')
+
+  ## Multiply `k' and `a' and divide by 10^6 for value in Mpc^2.
+  echo $k $a | awk '{print $1 * $2 / 1e6}'
+#+END_SRC
+
+At redshift 2, this field therefore covers approximately 1.07 $Mpc^2$.
+If you would like to see how this tangential area changes with redshift, you can use a shell loop like below:
+
+#+BEGIN_SRC bash
+  for z in 1 2 3; do \
+      k=$(astcosmiccal -sz$z); \
+      echo $z $k $a | awk '{print $1, ($2*60)^2 * $3 / 1e6}'; \
+  done
+
+  ## The loop over the redshifts
+  #
+  ## Naive approach
+  mkdir plot
+
+  for z in $(seq 0.1 0.1 5); do \
+      k=$(astcosmiccal -z$z --arcsectandist); \
+      echo $z $k $a | awk '{print $1, ($2*60)^2 * $3 / 1e6}'; \
+  done >> plot/z-vs-tandist-echo.dat
+
+  ## Using the Table program and LaTeX
+  for z in $(seq 0.1 0.1 5); do                                  \
+    k=$(astcosmiccal -z$z --arcsectandist);                      \
+    echo $z $k $a | awk '{print $1, ($2*60)^2 * $3 / 1e6}';   \
+  done | asttable --output=plot/z-vs-tandist.dat
+
+  ## Create the plot using pgfplots
+  cd plot
+
+  # create the source tex file using 'heredocs'
+  cat <<EOF > plot/z-vs-tandist.tex
+  \documentclass{article}
+  \usepackage{pgfplots}
+  \pgfplotsset{compat=1.5}
+
+  \begin{document}
+  \begin{tikzpicture}
+    \begin{axis}[
+        title=redshift vs tangential distance,
+        xlabel={redshift \$(z)\$},
+        ylabel={tangential distance \$(Mpc^2)\$},
+      ]
+      \addplot [blue] table{z-vs-tandist.dat};
+    \end{axis}
+  \end{tikzpicture}
+  \end{document}
+  EOF
+
+  pdflatex z-vs-tandist.tex
+  okular z-vs-tandist.pdf
+#+END_SRC
+
+#+CAPTION: redshift vs tangential distance
+#+NAME: fig:z-vs-tangential
+[[./images/z-vs-tangential.jpeg]]
+
+#+BEGIN_SRC bash
+  ## Using TOPCAT
+  for z in $(seq 0.1 0.1 5); do                                  \
+    k=$(astcosmiccal -z$z --arcsectandist);                      \
+    echo $z $k $a | awk '{print $1, ($2*60)^2 * $3 / 1e6}';   \
+  done | asttable --output=z-vs-tandist.fits
+
+  ## The 'astscript-fits-view' opens the plot automatically in TOPCAT
+  astscript-fits-view z-vs-tandist.fits
+#+END_SRC
