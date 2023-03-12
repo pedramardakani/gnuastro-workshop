@@ -1,0 +1,69 @@
+* Description
+
+Scripts and contents of workshops on gnuastro.
+The commands and the scenario is mostly taken from the gnuastro documentation with some slight changes.
+
+* Pre-workshop [0/2]
+
+1. [ ] Create a matrix room for the workshop
+2. [ ] Share the installation guide in email
+
+** General tips
+
+1. This is an up-and-running session on GNU Astronomy Utilities or in short: Gnuastro.
+   Bonus: Gnuastro is officially a GNU software, which means it follows the same standards and conventions.
+   Using gnuastro helps you learn a lot about GNU/Linux and its tools.
+   Also, it helps you pick up programming and command-line skills through extensive examples and documentation.
+2. Let us know if we're going too fast, or you're wondering about a shortcut we just used (and forgot to talk about it).
+3. By the end of this workshop, you should:
+   - Know [[https://www.gnu.org/software/gnuastro/manual/html_node/Introduction.html][what gnuastro is]],
+   - Understand the general concepts behind gnuastro,
+   - Get to know [[https://www.gnu.org/software/gnuastro/manual/html_node/Common-program-behavior.html][common program behavior]] and find your way around gnuastro using the documentation,
+   - Learn how to reach the developers for help and/or bug/feature report/request,
+4. Key: read the outputs, errors, messages, documentation, helps, etc.
+   They are all there to help you and give you a head-start on fixing problems.
+
+* Concepts
+
+** The CLI
+
+*** Getting help
+
+- Almost all programs and commands support the =--help= option,
+- For more detailed instructions, use =info PROGRAM_NAME= or =man PROGRAM_NAME=,
+- Look for =readme.txt= or similar files.
+
+*** Basic navigation commands
+
+- Where am I?
+  : pwd
+- List things that are here:
+  : ls
+- Change directory:
+  : cd XXX
+- Oh, wrong one, get back!
+  : cd ..
+
+*** Redirection
+
+So what if we want to save the output to a file instead of showing it on the screen?
+
+- The '>' and '>>' are called redirection operators
+
+*** Piping ([[https://www.gnu.org/software/gnuastro/manual/html_node/Standard-input.html][standard input]])
+
+How about passing the output of previous command as the input of the next one?
+
+- Concept of pipe: taking output of one command as input of the next one.
+- Main usage: _filtering_, providing input for a program that accepts _stream input_.
+- Example usage in environment
+
+*** grep
+
+- Filter program help by keywords:
+
+  : astnoisechisel --help | grep quant
+
+*** AWK
+
+*** Variables

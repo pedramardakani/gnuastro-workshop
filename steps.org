@@ -1,0 +1,380 @@
+** 2.1.1 Calling Gnuastro’s programs
+
+- Using magic shortcuts
+- Autocomplete
+
+#+BEGIN_SRC bash
+  ast<TAB><TAB>
+#+END_SRC
+
+** 2.1.2 Accessing documentation
+
+1. You do *not* need to remember all commands! Instead, you need to know
+   your way around the Gnuastro manual.
+
+2. The 'help' option
+
+   #+BEGIN_SRC bash
+     astcrop --help
+   #+END_SRC
+
+3. Check the default parameters, and be critical to them!
+
+   #+BEGIN_SRC bash
+     astnoisechisel --printparams
+     astnoisechisel -P
+   #+END_SRC
+
+4. GNU Info
+
+   #+BEGIN_SRC bash
+     info gnuastro
+     info warp
+     info bash
+     info awk
+   #+END_SRC
+
+     - Do not panic! Learn about info by typing the following command:
+
+     #+BEGIN_SRC bash
+         info info
+     #+END_SRC
+
+     Invest 30 minutes and then you are going to be much more efficient with
+     using various programs.
+
+** 2.1.3 Setup and data download
+
+*** Create directories: to keep things clean!
+
+  #+BEGIN_SRC bash
+    cd
+    mkdir gnuastro-tutorial
+    cd gnuastro-tutorial
+  #+END_SRC
+
+*** Symbolic link: You could use symbolic links if you already have the
+  datasets and save space on your precious disk-space.
+
+
+  #+BEGIN_SRC bash
+    ln -s /datasets/XXXX download
+  #+END_SRC
+
+*** Variables
+
+  #+BEGIN_SRC bash
+    # Tidy up
+    mkdir download
+    cd download
+
+    # Download the links
+    wget http://archive.stsci.edu/pub/hlsp/xdf/hlsp_xdf_hst_wfc3ir-60mas_hudf_f105w_v1_sci.fits
+    wget http://archive.stsci.edu/pub/hlsp/xdf/hlsp_xdf_hst_wfc3ir-60mas_hudf_f125w_v1_sci.fits
+    wget http://archive.stsci.edu/pub/hlsp/xdf/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+
+  #+END_SRC
+
+  But these links have too much in common!
+  We should be able to save ourselves some trouble using variables and loops.
+
+  #+BEGIN_SRC bash
+    # Create and inspect the links before downloading
+    #
+    # Variables
+    # Let the computer repeat what you said:
+    echo Hello friend
+    echo Hello friend :-)
+    echo "Hello friend! :-)"
+    echo $HOME
+    echo $PWD
+    echo $USER
+    echo "Hello ${user}!" # case sensitive, empty value (no errors)
+    echo "Hello ${USER}!" # echo is your best friend when debugging
+    echo "We are currently here: $(pwd)"
+
+    # Set variables as strings or numbers, all in lower-case:
+    url="https://www.gnu.org/software/gnuastro"
+    echo "Visit us here: ${url}"
+
+    chat="https://app.element.io/#/room/#gnuastro-workshop-persian:matrix.org"
+    echo "Chat here: ${chat}"
+
+    #+END_SRC
+
+*** Looping
+
+    #+BEGIN_SRC bash
+      # Searching the entire info and selecting
+      info -k looping
+      info bash -n "looping constructs"
+
+      # Searching a specific info, get in and then C-s
+      info bash
+
+      # Manual numbering:
+      for number in 1 2 3 4 5; do
+          echo "file-${number}.txt"
+      done
+
+      # Using sequences
+      for number in $(seq 12); do
+          echo "file-${number}.txt"
+      done
+
+      # Now get down to the business
+      xdfurl=http://archive.stsci.edu/pub/hlsp/xdf
+      for filter in f105w f125w f160w; do
+          echo "${xdfurl}/hlsp_xdf_hst_wfc3ir-60mas_hudf_${filter}_v1_sci.fits"
+      done
+
+      # Get back
+       cd ..
+  #+END_SRC
+
+  If there are more filters, use the following loop in bash:
+
+  #+BEGIN_SRC bash
+    for f in f105w f125w f140w f160w; do \
+      echo $xdfurl/hlsp_xdf_hst_wfc3ir-60mas_hudf_"$f"_v1_sci.fits; \
+    done
+  #+END_SRC
+
+  ds9 download/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+
+** 2.1.4 Dataset inspection and cropping
+
+*** DS9
+
+  #+BEGIN_SRC bash
+    ds9 download/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+    # And the alternative
+    astscript-fits-view download/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+  #+END_SRC
+
+*** An introduction about the [[https://archive.stsci.edu/prepds/xdf/#dataproducts]["deep-field"]]
+
+  #+CAPTION: Illingworth et al. 2013 ApJS 209 6
+  #+NAME: fig:xdf-buildup
+  [[./images/xdf_buildup.png]]
+
+*** Find the eXtremely deep region on DS9 using region, etc.
+
+  #+BEGIN_SRC bash
+    # First try
+    ds9 /datasets/xdf/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+
+    # Now check the region coords
+    cat xdf.reg
+
+    # Open in command-line
+    ds9 -region xdf.reg \
+        /datasets/xdf/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+
+    # Open via the GUI
+  #+END_SRC
+
+*** Crop the eXtreme region and view them:
+
+  #+BEGIN_SRC bash
+    # Tidy things up
+    mkdir flat-ir
+
+    # How does crop work?
+    astcrop --help
+
+    # Now I need more information about the syntax:
+    info astcrop
+
+    # Let the croppings begin
+    astcrop --mode=wcs -h0 --output=flat-ir/xdf-f105w.fits \
+            --polygon="53.187414,-27.779152 : 53.159507,-27.759633 : \
+                       53.134517,-27.787144 : 53.161906,-27.807208" \
+            download/hlsp_xdf_hst_wfc3ir-60mas_hudf_f105w_v1_sci.fits
+
+    astcrop --mode=wcs -h0 --output=flat-ir/xdf-f125w.fits \
+            --polygon="53.187414,-27.779152 : 53.159507,-27.759633 : \
+            53.134517,-27.787144 : 53.161906,-27.807208" \
+            download/hlsp_xdf_hst_wfc3ir-60mas_hudf_f125w_v1_sci.fits
+
+    astcrop --mode=wcs -h0 --output=flat-ir/xdf-f160w.fits \
+            --polygon="53.187414,-27.779152 : 53.159507,-27.759633 : \
+                       53.134517,-27.787144 : 53.161906,-27.807208" \
+            download/hlsp_xdf_hst_wfc3ir-60mas_hudf_f160w_v1_sci.fits
+
+    # View the work so far
+    astscript-fits-view flat-ir/xdf-f160w.fits
+  #+END_SRC
+
+  Remarks:
+
+  + Cleaner noise.
+
+  + NaN values instead of '0', sane statistics.
+
+*** Now let's do the same thing again, but following the DRY principle:
+
+  #+BEGIN_SRC bash
+    rm flat-ir/*.fits
+    for f in f105w f125w f160w; do \
+        astcrop --mode=wcs -h0 --output=flat-ir/xdf-$f.fits \
+                --polygon="53.187414,-27.779152 : 53.159507,-27.759633 :  \
+                           53.134517,-27.787144 : 53.161906,-27.807208 "  \
+                download/hlsp_xdf_hst_wfc3ir-60mas_hudf_"$f"_v1_sci.fits; \
+    done
+  #+END_SRC
+
+** 2.1.5 Angular coverage on the sky
+
+*** How large is this field on the sky?
+
+#+CAPTION: Handy estimate [[https://www.fortworthastro.com/beginner1.html][Fort Worth Astronomical Society]]
+#+NAME: fig:hand-degrees
+./images/Hand-Degrees-Forth-Worth-Astronomucal-Society.gif]]
+
+Hands are not accurate, but you can try by calibrating a bit:
+
+#+CAPTION: Calibrate [[https://www.fortworthastro.com/beginner1.html][Fort Worth Astronomical Society]]
+#+NAME: fig:hand-calibrate
+./images/hand-calibrate.gif]]
+
+For a reference, the moon size is 31 arcminutes (roughly half a degree).
+
+#+CAPTION: Moon in arcminutes [[https://www.fortworthastro.com/beginner1.html][Fort Worth Astronomical Society]]
+#+NAME: fig:moon-arcminutes
+./images/arcminutes.jpg]]
+
+Now let's measure this image's sky coverage using the Fits program:
+
+#+BEGIN_SRC bash
+  astfits flat-ir/xdf-f160w.fits --skycoverage
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet
+#+END_SRC
+
+*** To calculate the results, let's use AWK:
+
+#+BEGIN_SRC bash
+  # What's what
+  astfits flat-ir/xdf-f160w.fits --skycoverage
+
+  # Make it machine-friendly
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet
+
+  # Now just print the second row
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet \
+          | awk 'NR==2'
+
+  # OK let's access each value
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet \
+          | awk 'NR==2{print $4, $3, $2, $1}'
+
+  # See we are able to do arithmetic
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet \
+          | awk 'NR==2{print $4-$3, $2-$1}'
+
+  # Also we can use paranthesis
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet \
+          | awk 'NR==2{print ($4-$3)*60, ($2-$1)*60}'
+
+  # Now calculate the area coverage in arcminutes
+  astfits flat-ir/xdf-f160w.fits --skycoverage --quiet \
+          | awk 'NR==2{print ($4-$3)*60*($2-$1)*60}'
+#+END_SRC
+
+*** What is wrong with the current approach?
+
+Hint: open the image at the side ... the blank pixels ... rings a bell?
+
+*** Let's fix the problem:
+
+Each pixel covers a specific area of the sky.
+
+#+CAPTION: Representing celestial coordinate systems [[https://www.atnf.csiro.au/people/mcalabre/WCS/Intro/WCS01.html]]
+#+NAME: fig:wcs
+[[./images/WCS05.gif]]
+
+1. Let's get the number using the FITS header keywords:
+
+   #+BEGIN_SRC bash
+     ## Show all the FITS keywords of this image.
+     astfits flat-ir/xdf-f160w.fits -h1
+
+     ## The resolution (in degrees/pixel) is in the `CDELT' keywords.
+     ## Only show lines that contain these characters, by feeding
+     ## the output of the previous command to the `grep' program.
+     astfits flat-ir/xdf-f160w.fits -h1 | grep CDELT
+
+     ## Since the resolution of both dimensions is (approximately) equal,
+     ## we will only read the value of one (CDELT1) with '--keyvalue'.
+     astfits flat-ir/xdf-f160w.fits -h1 --keyvalue=CDELT1
+
+     ## We do not need the file name in the output (add '--quiet').
+     astfits flat-ir/xdf-f160w.fits -h1 --keyvalue=CDELT1 --quiet
+
+     ## Save it as the shell variable `r'.
+     r=$(astfits flat-ir/xdf-f160w.fits -h1 --keyvalue=CDELT1 --quiet)
+
+     echo $r | awk '{print ($1*60)^2}'
+   #+END_SRC
+
+2. Now we know how much of the sky each pixel covers.
+   Let's go for number of blank pixels:
+
+   #+BEGIN_SRC bash
+     ## See the general statistics of non-blank pixel values.
+     aststatistics flat-ir/xdf-f160w.fits
+
+     ## Find the option we're looking for:
+     aststatistics --help | grep blank
+
+     # OR
+     info aststatistics -n single
+
+     ## We only want the number of non-blank pixels (add '--number').
+     aststatistics flat-ir/xdf-f160w.fits --number
+
+     ## Keep the result of the command above in the shell variable `n'.
+     n=$(aststatistics flat-ir/xdf-f160w.fits --number)
+
+     ## See what is stored the shell variable `n'.
+     echo $n
+
+     ## Print the values of `n' and `r'.
+     echo $n $r
+
+     ## Use the number of pixels (first number passed to AWK) and
+     ## length of each pixel's edge (second number passed to AWK)
+     ## to estimate the area of the field in arc-minutes squared.
+     echo $n $r | awk '{print $1 * ($2*60)^2}'
+   #+END_SRC
+
+3. What is the moon's sky coverage and how do these two compare to each other?
+
+   #+BEGIN_SRC bash
+     echo 31 4.04 | awk '{print 3.14*$1**2 / $2}'
+   #+END_SRC
+
+4. Not all FITS images have the =CDELT= keyword.
+   What should we do?
+
+   #+BEGIN_SRC bash
+     ## Get help!
+     astfits --help
+
+     ## What is the keyword we're looking for?
+     astfits --help | grep pixel
+   #+END_SRC
+
+   We've got it!
+   Now simply use the =--pixelscale= option ;-)
+
+   #+BEGIN_SRC bash
+     astfits flat-ir/xdf-f160w.fits --pixelscale
+   #+END_SRC
+
+   Don't bother with all the previous commands.
+   They are just there to give you an idea of how things are working and how you can handle calculations.
+   You should use the higher-level options and commands as much as possible.
+   This prevents silly mistakes, and saves your time.
+   Quick and accurate results.
+   Please let us know if you find any *bugs* though!
