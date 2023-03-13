@@ -564,6 +564,8 @@ Please refer to the manual.
 One of the most important points while using several images for data processing is that those images must have the same pixel grid.
 The process of changing the pixel grid is named *warp*.
 
+*** Warp linear operations:
+
 #+BEGIN_SRC bash
   astwarp flat-ir/xdf-f160w.fits --rotate=20
   astwarp flat-ir/xdf-f160w.fits --scale=0.25
@@ -571,6 +573,57 @@ The process of changing the pixel grid is named *warp*.
   astwarp flat-ir/xdf-f160w.fits --shear=0.2
   astwarp flat-ir/xdf-f160w.fits --project=0.001,0.0005
 #+END_SRC
+
+*** Warp nice regridding
+
+**** Getting the data ready
+
+#+BEGIN_SRC bash
+  ## Getting the data ready
+  if ! [ -d inputs ]; then mkdir inputs; fi
+
+  sdssurl=https://dr12.sdss.org/sas/dr12/boss/photoObj/frames
+  for f in g r i; do
+      if ! [ -f inputs/$f-sdss.fits ]; then
+          wget $sdssurl/301/3716/6/frame-$f-003716-6-0117.fits.bz2 -O$f.fits.bz2
+          bunzip2 $f.fits.bz2
+          astarithmetic $f.fits -h0 -oinputs/$f-sdss.fits
+          rm $f.fits.bz2
+      fi
+  done
+
+  jplusurl=http://archive.cefca.es/catalogues/vo/siap/jplus-dr2/get_fits?id=67510
+  if ! [ -f inputs/r-jplus.fits ]; then
+      wget $jplusurl -O r-jplus.fits.fz
+      astarithmetic r-jplus.fits.fz -o inputs/r-jplus.fits
+      rm r-jplus.fits.fz
+  fi
+#+END_SRC
+
+**** Execute the warp
+
+#+BEGIN_SRC bash
+  ds9 inputs/*.bz2
+
+  # Make a color image to show that the images aren't aligned properly!
+  astconvertt inputs/i-sdss.fits inputs/r-sdss.fits inputs/g-sdss.fits \
+              --fluxhigh=0.7 -g1 -om51-raw.pdf
+
+  # Align the r-band image to the celestial coordinates.
+  astwarp inputs/r-sdss.fits --output=r.fits
+
+  # Open the input and output
+  astscript-fits-view inputs/r-sdss.fits r.fits
+
+  # Align the other two images to the same grid as the aligned r-band
+  # image:
+  astwarp inputs/g-sdss.fits --gridfile=r.fits --output=g.fits
+  astwarp inputs/i-sdss.fits --gridfile=r.fits --output=i.fits
+
+  # Build a color PDF to show how they correctly align.
+  astconvertt i.fits r.fits g.fits --fluxhigh=0.1 -g1 -om51-warped.pdf
+#+END_SRC
+
 
 ** 2.1.22 Writing scripts to automate the steps
 
